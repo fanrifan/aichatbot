@@ -8,24 +8,33 @@ import {
   titleModel,
 } from './models.test';
 
+// ✅ Perbaikan: chat diletakkan di dalam 'model' object
 const deepSeekWrapper = (model: string) =>
   wrapLanguageModel({
-    chat: async ({ messages, stream }) => {
-      const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          stream,
-        }),
-      });
+    model: {
+      chat: async ({ messages, stream }) => {
+        const res = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            stream,
+          }),
+        });
 
-      return res.body;
+        // Jika pakai stream, SDK `ai` biasanya ekspektasinya adalah ReadableStream
+        // Pastikan res.body tidak null
+        if (!res.body) throw new Error('No response body from DeepSeek API');
+        return res.body;
+      },
     },
+    middleware: [], // Jika tidak perlu middleware khusus
+    providerId: 'deepseek',
+    modelId: model,
   });
 
 export const myProvider = isTestEnvironment
